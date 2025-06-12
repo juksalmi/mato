@@ -65,7 +65,7 @@
 
     // --- Game state ---
     let snake, direction, squashBall, grow, score, gameOver, started;
-    let speed, ballValue, block, blockValue;
+    let speed, ballValue, block, blockValue, loopTimeout;
 
     // --- Ranking ---
     function getRankings() {
@@ -107,7 +107,7 @@
       score = 0;
       gameOver = false;
       started = false;
-      speed = 150;     // ms / frame (alussa hidas)
+      speed = 250;     // ms / frame (alussa hidas)
       ballValue = 10;  // squashpallon arvo
       block = spawnBlock();
       blockValue = 5;  // alussa este -5 pistettä
@@ -121,10 +121,8 @@
       started = true;
     }
     document.addEventListener("keydown", e => {
-      if (gameOver && (e.key === "Enter" || e.key === " ")) {
-        resetGame();
-        draw();
-        setTimeout(gameLoop, speed);
+      if (gameOver) {
+        startNewGame();
         return;
       }
       if (e.key === "ArrowUp" && direction.y !== 1) handleDirection({x:0, y:-1});
@@ -140,6 +138,21 @@
     document.getElementById('down').addEventListener('mousedown', () => handleDirection({x:0, y:1}));
     document.getElementById('left').addEventListener('mousedown', () => handleDirection({x:-1, y:0}));
     document.getElementById('right').addEventListener('mousedown', () => handleDirection({x:1, y:0}));
+
+    // Kosketa tai klikkaa canvasia kun peli on ohi -> uusi peli
+    canvas.addEventListener("touchstart", () => {
+      if (gameOver) startNewGame();
+    });
+    canvas.addEventListener("mousedown", () => {
+      if (gameOver) startNewGame();
+    });
+
+    function startNewGame() {
+      if (loopTimeout) clearTimeout(loopTimeout);
+      resetGame();
+      draw();
+      setTimeout(gameLoop, speed);
+    }
 
     function spawnBall() {
       let ball;
@@ -280,7 +293,7 @@
         ctx.fillStyle = "#222";
         ctx.font = "20px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("Aloita peli: nuolinäppäin tai paina nuolta", canvas.width/2, canvas.height/2);
+        ctx.fillText("Aloita peli: nuolinäppäin, nuolinappi tai napauta kenttää", canvas.width/2, canvas.height/2);
         ctx.textAlign = "left";
       }
       if (gameOver) {
@@ -290,7 +303,7 @@
         ctx.fillText("Peli ohi!", canvas.width/2, canvas.height/2-12);
         ctx.font = "18px Arial";
         ctx.fillText("Pisteet: " + score, canvas.width/2, canvas.height/2+18);
-        ctx.fillText("Aloita uusi peli: Enter", canvas.width/2, canvas.height/2+42);
+        ctx.fillText("Uusi peli: napauta kenttää, paina nappia tai näppäintä", canvas.width/2, canvas.height/2+42);
         ctx.textAlign = "left";
       }
     }
@@ -298,7 +311,9 @@
     function gameLoop() {
       step();
       draw();
-      if (!gameOver) setTimeout(gameLoop, speed);
+      if (!gameOver) {
+        loopTimeout = setTimeout(gameLoop, speed);
+      }
       // Jos peli loppuu, ajetaan ranking
       if (gameOver) setTimeout(handleRanking, 500);
     }
